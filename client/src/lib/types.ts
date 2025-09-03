@@ -29,4 +29,24 @@ export type Analytics = {
     neutral: number;
     negative: number;
   };
+  processingStats: {
+    pending: number;
+    processed: number;
+    sent: number;
+  };
+};
+
+export type QueueStats = {
+  urgent: {
+    waiting: number;
+    active: number;
+  };
+  normal: {
+    waiting: number;
+    active: number;
+  };
+  total: {
+    waiting: number;
+    active: number;
+  };
 };

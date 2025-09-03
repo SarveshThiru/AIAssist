@@ -23,6 +23,11 @@ export interface IStorage {
       neutral: number;
       negative: number;
     };
+    processingStats: {
+      pending: number;
+      processed: number;
+      sent: number;
+    };
   }>;
 }
 
@@ -93,6 +98,11 @@ export class DatabaseStorage implements IStorage {
       neutral: number;
       negative: number;
     };
+    processingStats: {
+      pending: number;
+      processed: number;
+      sent: number;
+    };
   }> {
     // Total emails count
     const [{ totalEmails }] = await db
@@ -138,12 +148,34 @@ export class DatabaseStorage implements IStorage {
     const avgResponseTime = 2.4;
     const resolutionRate = 94;
 
+    // Get processing status distribution
+    const statusResults = await db
+      .select({
+        status: emails.status,
+        count: count()
+      })
+      .from(emails)
+      .groupBy(emails.status);
+
+    const processingStats = {
+      pending: 0,
+      processed: 0,
+      sent: 0
+    };
+
+    statusResults.forEach(result => {
+      if (result.status && processingStats.hasOwnProperty(result.status)) {
+        processingStats[result.status] = result.count;
+      }
+    });
+
     return {
       totalEmails,
       urgentEmails,
       avgResponseTime,
       resolutionRate,
-      sentimentDistribution
+      sentimentDistribution,
+      processingStats
     };
   }
 }

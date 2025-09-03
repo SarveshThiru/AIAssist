@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/sidebar";
 import { EmailList } from "@/components/email-list";
 import { EmailDetail } from "@/components/email-detail";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
+import { EmailSettings } from "@/components/email-settings";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState<"inbox" | "analytics" | "urgent" | "processed" | "settings">("inbox");
@@ -39,14 +40,7 @@ export default function Dashboard() {
         
         {activeView === "analytics" && <AnalyticsDashboard />}
         
-        {activeView === "settings" && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-4">Settings</h2>
-              <p className="text-muted-foreground">Settings panel would be implemented here</p>
-            </div>
-          </div>
-        )}
+        {activeView === "settings" && <EmailSettings />}
 
         {selectedEmailId && (
           <EmailDetail 

@@ -39,7 +39,7 @@ export function AnalyticsDashboard() {
       </header>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
         <Card data-testid="card-total-emails">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Emails</CardTitle>
@@ -100,6 +100,35 @@ export function AnalyticsDashboard() {
             <div className="flex items-center text-xs text-green-600">
               <TrendingUp className="w-3 h-3 mr-1" />
               +3% improvement
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-processing-status">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Processing Status</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-green-600">Processed:</span>
+                <span className="font-bold text-green-600" data-testid="status-processed">
+                  {analytics.processingStats?.processed || 0}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-yellow-600">Pending:</span>
+                <span className="font-bold text-yellow-600" data-testid="status-pending">
+                  {analytics.processingStats?.pending || 0}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-blue-600">Sent:</span>
+                <span className="font-bold text-blue-600" data-testid="status-sent">
+                  {analytics.processingStats?.sent || 0}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertEmailSchema, updateEmailSchema } from "@shared/schema";
 import { analyzeSentiment, analyzeUrgency, extractInformation, generateResponse } from "./services/openai";
+import { addEmailToQueue, getQueueStats } from "./services/simple-queue";
+import { EmailIngestionService, createGmailConfig, createOutlookConfig } from "./services/email-ingestion";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all emails with optional filtering
@@ -179,6 +181,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error syncing emails:", error);
       res.status(500).json({ error: "Failed to sync emails" });
+    }
+  });
+
+  // Real email ingestion endpoint (for demo - requires email credentials)
+  app.post("/api/emails/ingest", async (req, res) => {
+    try {
+      const { emailType, email, password } = req.body;
+      
+      if (!emailType || !email || !password) {
+        return res.status(400).json({ 
+          error: "Email type, email, and password/app-password are required",
+          example: {
+            emailType: "gmail",
+            email: "your-email@gmail.com", 
+            password: "your-app-password"
+          }
+        });
+      }
+
+      let config;
+      if (emailType === "gmail") {
+        config = createGmailConfig(email, password);
+      } else if (emailType === "outlook") {
+        config = createOutlookConfig(email, password);
+      } else {
+        return res.status(400).json({ error: "Unsupported email type. Use 'gmail' or 'outlook'" });
+      }
+
+      const ingestionService = new EmailIngestionService(config);
+      const count = await ingestionService.fetchEmails();
+      
+      res.json({ 
+        message: `Successfully ingested ${count} new support emails from ${emailType}`,
+        count,
+        note: "Only emails with support-related keywords were imported"
+      });
+    } catch (error) {
+      console.error("Error ingesting emails:", error);
+      res.status(500).json({ 
+        error: "Failed to ingest emails",
+        details: error instanceof Error ? error.message : "Unknown error",
+        help: "Make sure your email credentials are correct and app passwords are enabled for Gmail"
+      });
+    }
+  });
+
+  // Queue statistics endpoint
+  app.get("/api/queue/stats", async (req, res) => {
+    try {
+      const stats = await getQueueStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching queue stats:", error);
+      res.status(500).json({ error: "Failed to fetch queue statistics" });
+    }
+  });
+
+  // Process email with queue
+  app.post("/api/emails/:id/queue", async (req, res) => {
+    try {
+      const email = await storage.getEmailById(req.params.id);
+      if (!email) {
+        return res.status(404).json({ error: "Email not found" });
+      }
+
+      await addEmailToQueue(email.id, email.isUrgent);
+      
+      res.json({ 
+        message: `Email added to ${email.isUrgent ? 'urgent' : 'normal'} processing queue`,
+        queueType: email.isUrgent ? 'urgent' : 'normal'
+      });
+    } catch (error) {
+      console.error("Error queuing email:", error);
+      res.status(500).json({ error: "Failed to queue email" });
     }
   });
 

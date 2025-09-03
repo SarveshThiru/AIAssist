@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { generateRAGResponse } from "./knowledge-base";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -121,12 +122,19 @@ export async function generateResponse(emailData: {
   extractedData: ExtractedData;
 }): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-      messages: [
-        {
-          role: "system",
-          content: `You are an empathetic customer support assistant. Generate a professional, context-aware response to customer emails. 
+    // Use RAG-enhanced response generation
+    return await generateRAGResponse(emailData);
+  } catch (error) {
+    console.error("Failed to generate RAG response, falling back to basic response:", error);
+    
+    // Fallback to basic response if RAG fails
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `You are an empathetic customer support assistant. Generate a professional, context-aware response to customer emails. 
 
 Guidelines:
 - Be empathetic and understanding, especially for negative sentiment emails
@@ -134,26 +142,27 @@ Guidelines:
 - Provide clear next steps or ask clarifying questions
 - Keep responses concise but helpful
 - Always maintain a professional and friendly tone
-- Include a case reference number in format: CASE-2024-XXXX (use random 4 digits)
+- Include a case reference number in format: CASE-2025-XXXX (use random 4 digits)
 
 Customer sentiment: ${emailData.sentiment}
 Extracted data: ${JSON.stringify(emailData.extractedData)}`
-        },
-        {
-          role: "user",
-          content: `Original email from ${emailData.sender}:
+          },
+          {
+            role: "user",
+            content: `Original email from ${emailData.sender}:
 Subject: ${emailData.subject}
 
 ${emailData.body}
 
 Please generate an appropriate response.`,
-        },
-      ],
-    });
+          },
+        ],
+      });
 
-    return response.choices[0].message.content || "Thank you for contacting us. We'll review your request and get back to you soon.";
-  } catch (error) {
-    console.error("Failed to generate response:", error);
-    return "Thank you for contacting us. We'll review your request and get back to you soon.";
+      return response.choices[0].message.content || "Thank you for contacting us. We'll review your request and get back to you soon.";
+    } catch (fallbackError) {
+      console.error("Failed to generate fallback response:", fallbackError);
+      return "Thank you for contacting us. We'll review your request and get back to you soon.";
+    }
   }
 }
