@@ -132,6 +132,3 @@ For development:
 ```bash
 npm run dev
 ```
-
-## License
-MIT License
